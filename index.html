@@ -223,16 +223,63 @@ input:focus, select:focus{outline:2px solid var(--copper-500); outline-offset:0;
 
 @media (max-width:900px){
   .sidebar{display:none;}
-  .main{padding:20px;}
+  .sidebar.open{
+    display:flex; position:fixed; inset:0; z-index:200; width:100%; max-width:300px;
+    box-shadow: 4px 0 24px rgba(0,0,0,0.3);
+  }
+  .main{padding:16px 16px 80px;}
   .form-grid{grid-template-columns:1fr;}
   .detail-grid{grid-template-columns:1fr;}
   .month-grid{grid-template-columns:repeat(4,1fr);}
+  .page-head{flex-direction:column; gap:12px;}
+  .kpi-grid{grid-template-columns:1fr 1fr;}
+}
+
+/* Mobile overlay backdrop */
+.sidebar-overlay{
+  display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:199;
+}
+.sidebar-overlay.open{display:block;}
+
+/* Bottom nav bar for mobile */
+.mobile-nav{
+  display:none;
+  position:fixed; bottom:0; left:0; right:0;
+  background:var(--ink-900); border-top:1px solid rgba(255,255,255,0.1);
+  z-index:100; padding:8px 0 max(8px, env(safe-area-inset-bottom));
+  grid-template-columns: repeat(4, 1fr);
+}
+.mobile-nav-item{
+  display:flex; flex-direction:column; align-items:center; gap:3px;
+  color:var(--paper-200); font-size:10px; font-weight:600; cursor:pointer;
+  padding:6px 4px; border:none; background:none; font-family:inherit;
+}
+.mobile-nav-item.active{color:var(--copper-500);}
+.mobile-nav-item .ico{font-size:20px; line-height:1;}
+
+@media (max-width:900px){
+  .mobile-nav{display:grid;}
 }
 </style>
 </head>
 <body>
 
+<div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
 <div id="root"></div>
+<div class="mobile-nav" id="mobile-nav">
+  <button class="mobile-nav-item" data-nav="dashboard" onclick="mobileNav('dashboard')">
+    <span class="ico">◆</span>Geral
+  </button>
+  <button class="mobile-nav-item" data-nav="properties" onclick="mobileNav('properties')">
+    <span class="ico">⌂</span>Imóveis
+  </button>
+  <button class="mobile-nav-item" data-nav="yield" onclick="mobileNav('yield')">
+    <span class="ico">∧</span>Rend.
+  </button>
+  <button class="mobile-nav-item" onclick="openSidebar()">
+    <span class="ico">☰</span>Menu
+  </button>
+</div>
 
 <script>
 /* ============================================================
@@ -924,10 +971,22 @@ function attr(v){ return v===undefined||v===null ? '' : esc(v); }
    ============================================================ */
 function attachGlobalHandlers(){
   document.querySelectorAll('[data-nav]').forEach(el=>{
-    el.addEventListener('click', ()=>{ view.page = el.dataset.nav; view.tab='overview'; render(); });
+    el.addEventListener('click', ()=>{
+      view.page = el.dataset.nav;
+      view.tab='overview';
+      closeSidebar();
+      render();
+      updateMobileNav();
+    });
   });
   document.querySelectorAll('[data-open-property]').forEach(el=>{
-    el.addEventListener('click', ()=>{ view.page='property_detail'; view.propertyId=el.dataset.openProperty; view.tab='overview'; render(); });
+    el.addEventListener('click', ()=>{
+      view.page='property_detail';
+      view.propertyId=el.dataset.openProperty;
+      view.tab='overview';
+      closeSidebar();
+      render();
+    });
   });
   document.querySelectorAll('[data-tab]').forEach(el=>{
     el.addEventListener('click', ()=>{ view.tab = el.dataset.tab; render(); });
@@ -1091,11 +1150,36 @@ function saveUnit(){
 }
 
 /* ============================================================
+   MOBILE NAV HELPERS
+   ============================================================ */
+function openSidebar(){
+  document.querySelector('.sidebar').classList.add('open');
+  document.getElementById('sidebar-overlay').classList.add('open');
+}
+function closeSidebar(){
+  const s = document.querySelector('.sidebar');
+  if(s) s.classList.remove('open');
+  document.getElementById('sidebar-overlay').classList.remove('open');
+}
+function mobileNav(page){
+  view.page = page;
+  view.tab = 'overview';
+  render();
+  updateMobileNav();
+}
+function updateMobileNav(){
+  document.querySelectorAll('.mobile-nav-item[data-nav]').forEach(el=>{
+    el.classList.toggle('active', el.dataset.nav === view.page);
+  });
+}
+
+/* ============================================================
    INIT
    ============================================================ */
 loadFromStorage();
 ensureDefaultUnits();
 render();
+updateMobileNav();
 </script>
 </body>
 </html>
