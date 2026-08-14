@@ -1,0 +1,24 @@
+{
+  "name": "Gestão de Imóveis",
+  "short_name": "Imóveis",
+  "description": "Gestão pessoal de imóveis, arrendamentos e rentabilidade",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#1a2438",
+  "theme_color": "#1a2438",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
