@@ -1,0 +1,1410 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gestão de Imóveis</title>
+<meta name="description" content="Gestão pessoal de imóveis, arrendamentos e rentabilidade">
+<meta name="theme-color" content="#1a2438">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Imóveis">
+<link rel="manifest" href="manifest.json">
+<!-- iOS icon (Safari uses apple-touch-icon) -->
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Source+Sans+3:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+:root{
+  --ink-900:#1a2438;
+  --ink-700:#2d3b54;
+  --ink-500:#56698c;
+  --paper-50:#faf8f3;
+  --paper-100:#f1ecdf;
+  --paper-200:#e4dcc6;
+  --copper-500:#b5663a;
+  --copper-600:#9a5230;
+  --green-600:#3f6e52;
+  --red-600:#a8412f;
+  --line:#d8d0ba;
+  --shadow: 0 1px 2px rgba(26,36,56,0.06), 0 4px 12px rgba(26,36,56,0.04);
+}
+
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  font-family:'Source Sans 3', sans-serif;
+  background:var(--paper-50);
+  color:var(--ink-900);
+  min-height:100vh;
+}
+
+.app{display:flex; min-height:100vh;}
+
+/* ---------- Sidebar ---------- */
+.sidebar{
+  width:240px;
+  background:var(--ink-900);
+  color:var(--paper-100);
+  padding:28px 18px;
+  display:flex;
+  flex-direction:column;
+  flex-shrink:0;
+}
+.brand{
+  font-family:'Fraunces', serif;
+  font-size:22px;
+  font-weight:600;
+  letter-spacing:-0.01em;
+  margin-bottom:4px;
+}
+.brand-sub{
+  font-size:11px;
+  text-transform:uppercase;
+  letter-spacing:0.12em;
+  color:var(--copper-500);
+  margin-bottom:32px;
+}
+.nav-item{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:11px 14px;
+  border-radius:6px;
+  color:var(--paper-200);
+  font-size:14.5px;
+  font-weight:500;
+  cursor:pointer;
+  margin-bottom:2px;
+  transition:background 0.15s;
+}
+.nav-item:hover{background:rgba(255,255,255,0.06);}
+.nav-item.active{background:rgba(181,102,58,0.18); color:#fff;}
+.nav-item .ico{width:18px; text-align:center; font-size:15px;}
+.sidebar-foot{
+  margin-top:auto;
+  font-size:12px;
+  color:var(--ink-500);
+  line-height:1.5;
+}
+.file-status{
+  display:flex; align-items:center; gap:6px;
+  padding:9px 11px; border-radius:6px;
+  background:rgba(255,255,255,0.05);
+  margin-bottom:10px; font-size:12.5px;
+}
+.dot{width:7px; height:7px; border-radius:50%; flex-shrink:0;}
+.dot.on{background:#5fae7e;}
+.dot.off{background:#c77;}
+.btn-file{
+  width:100%; padding:9px 10px; border-radius:6px; border:1px solid rgba(255,255,255,0.15);
+  background:transparent; color:var(--paper-100); font-size:12.5px; cursor:pointer; margin-bottom:6px;
+  font-family:inherit; transition:background .15s;
+}
+.btn-file:hover{background:rgba(255,255,255,0.08);}
+
+/* ---------- Main ---------- */
+.main{flex:1; padding:32px 40px 60px; max-width:1280px;}
+.page-head{display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:28px; gap:20px;}
+.page-title{font-family:'Fraunces', serif; font-size:30px; font-weight:600; margin:0 0 4px;}
+.page-sub{color:var(--ink-500); font-size:14.5px; margin:0;}
+
+.btn{
+  font-family:inherit; font-size:14px; font-weight:600; padding:10px 18px; border-radius:7px;
+  border:none; cursor:pointer; transition: transform .08s, background .15s;
+}
+.btn:active{transform:scale(0.97);}
+.btn-primary{background:var(--ink-900); color:#fff;}
+.btn-primary:hover{background:var(--ink-700);}
+.btn-copper{background:var(--copper-500); color:#fff;}
+.btn-copper:hover{background:var(--copper-600);}
+.btn-ghost{background:transparent; color:var(--ink-700); border:1px solid var(--line);}
+.btn-ghost:hover{background:var(--paper-100);}
+.btn-sm{padding:6px 12px; font-size:13px;}
+.btn-danger-text{background:none; border:none; color:var(--red-600); cursor:pointer; font-size:13px; font-weight:600; padding:4px 8px;}
+
+/* ---------- KPI cards ---------- */
+.kpi-grid{display:grid; grid-template-columns:repeat(auto-fit, minmax(190px,1fr)); gap:14px; margin-bottom:32px;}
+.kpi-card{
+  background:#fff; border:1px solid var(--line); border-radius:10px; padding:18px 20px;
+  box-shadow:var(--shadow);
+}
+.kpi-label{font-size:11.5px; text-transform:uppercase; letter-spacing:0.07em; color:var(--ink-500); margin-bottom:8px; font-weight:600;}
+.kpi-value{font-family:'JetBrains Mono', monospace; font-size:23px; font-weight:600; color:var(--ink-900);}
+.kpi-value.copper{color:var(--copper-600);}
+.kpi-value.green{color:var(--green-600);}
+.kpi-value.red{color:var(--red-600);}
+.kpi-card.hero{background:var(--ink-900); border-color:var(--ink-900);}
+.kpi-card.hero .kpi-label{color:var(--paper-200);}
+.kpi-card.hero .kpi-value{color:#fff;}
+
+/* ---------- Tables / Cards ---------- */
+.section-title{font-family:'Fraunces', serif; font-size:18px; font-weight:600; margin:0 0 14px;}
+.card{background:#fff; border:1px solid var(--line); border-radius:10px; box-shadow:var(--shadow); overflow:hidden; margin-bottom:24px;}
+table{width:100%; border-collapse:collapse; font-size:14px;}
+th{
+  text-align:left; padding:11px 16px; font-size:11.5px; text-transform:uppercase; letter-spacing:0.05em;
+  color:var(--ink-500); border-bottom:1px solid var(--line); background:var(--paper-100); font-weight:600;
+}
+td{padding:13px 16px; border-bottom:1px solid var(--paper-200); vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+tr.row-link{cursor:pointer; transition:background .12s;}
+tr.row-link:hover{background:var(--paper-50);}
+.mono{font-family:'JetBrains Mono', monospace; font-size:13.5px;}
+.tag{display:inline-block; padding:3px 9px; border-radius:20px; font-size:11.5px; font-weight:600;}
+.tag.ok{background:#e3eee6; color:var(--green-600);}
+.tag.bad{background:#f5e4e0; color:var(--red-600);}
+.tag.neutral{background:var(--paper-200); color:var(--ink-700);}
+.empty-state{padding:48px 24px; text-align:center; color:var(--ink-500);}
+.empty-state .ico{font-size:32px; margin-bottom:10px; opacity:0.5;}
+
+/* ---------- Modal ---------- */
+.modal-backdrop{
+  position:fixed; inset:0; background:rgba(26,36,56,0.45); display:flex; align-items:flex-start;
+  justify-content:center; padding:40px 20px; overflow-y:auto; z-index:100;
+}
+.modal{
+  background:var(--paper-50); border-radius:14px; max-width:640px; width:100%; padding:30px 34px 32px;
+  box-shadow:0 20px 60px rgba(0,0,0,0.25);
+}
+.modal h2{font-family:'Fraunces', serif; font-size:22px; margin:0 0 4px;}
+.modal .modal-sub{color:var(--ink-500); font-size:13.5px; margin-bottom:22px;}
+.form-grid{display:grid; grid-template-columns:1fr 1fr; gap:14px 16px;}
+.form-grid.col1{grid-template-columns:1fr;}
+.field{display:flex; flex-direction:column; gap:5px;}
+.field.span2{grid-column:1/-1;}
+label{font-size:12.5px; font-weight:600; color:var(--ink-700);}
+input, select{
+  font-family:inherit; font-size:14px; padding:9px 11px; border:1px solid var(--line); border-radius:7px;
+  background:#fff; color:var(--ink-900);
+}
+input:focus, select:focus{outline:2px solid var(--copper-500); outline-offset:0; border-color:var(--copper-500);}
+.modal-actions{display:flex; justify-content:flex-end; gap:10px; margin-top:26px;}
+.section-divider{
+  font-size:11.5px; text-transform:uppercase; letter-spacing:0.07em; color:var(--copper-600);
+  font-weight:700; margin:22px 0 12px; padding-top:14px; border-top:1px solid var(--line);
+}
+.section-divider:first-of-type{border-top:none; padding-top:0; margin-top:4px;}
+
+/* ---------- Detail view ---------- */
+.back-link{display:inline-flex; align-items:center; gap:6px; color:var(--ink-500); font-size:13.5px; font-weight:600; cursor:pointer; margin-bottom:16px;}
+.back-link:hover{color:var(--ink-900);}
+.detail-grid{display:grid; grid-template-columns:2fr 1fr; gap:24px; align-items:start;}
+.info-row{display:flex; justify-content:space-between; padding:9px 0; border-bottom:1px solid var(--paper-200); font-size:13.5px;}
+.info-row:last-child{border-bottom:none;}
+.info-row .k{color:var(--ink-500);}
+.info-row .v{font-weight:600; font-family:'JetBrains Mono', monospace; font-size:13px;}
+.month-grid{display:grid; grid-template-columns:repeat(6,1fr); gap:6px; margin-top:10px;}
+.month-cell{
+  text-align:center; padding:8px 4px; border-radius:6px; font-size:11.5px; cursor:pointer;
+  border:1px solid var(--line); font-weight:600; user-select:none; transition:.12s;
+}
+.month-cell.paid{background:#e3eee6; color:var(--green-600); border-color:#c5dccb;}
+.month-cell.unpaid{background:#f5e4e0; color:var(--red-600); border-color:#e6c4ba;}
+.month-cell:hover{transform:scale(1.04);}
+.tabs{display:flex; gap:4px; border-bottom:1px solid var(--line); margin-bottom:20px;}
+.tab{padding:10px 4px; margin-right:22px; font-size:14px; font-weight:600; color:var(--ink-500); cursor:pointer; border-bottom:2px solid transparent; position:relative; top:1px;}
+.tab.active{color:var(--ink-900); border-bottom-color:var(--copper-500);}
+.subtle-btn{background:none; border:none; color:var(--ink-500); cursor:pointer; font-size:13px; padding:4px;}
+.subtle-btn:hover{color:var(--ink-900);}
+
+.year-select{display:flex; align-items:center; gap:10px; margin-bottom:24px;}
+.year-select select{width:auto;}
+
+.bar-row{display:flex; align-items:center; gap:12px; margin-bottom:10px;}
+.bar-label{width:140px; font-size:13px; color:var(--ink-700); flex-shrink:0;}
+.bar-track{flex:1; height:22px; background:var(--paper-200); border-radius:5px; overflow:hidden;}
+.bar-fill{height:100%; border-radius:5px;}
+.bar-value{width:90px; text-align:right; font-family:'JetBrains Mono', monospace; font-size:12.5px; font-weight:600; flex-shrink:0;}
+
+.welcome{display:flex; align-items:center; justify-content:center; min-height:70vh; flex-direction:column; text-align:center; padding:20px;}
+.welcome h1{font-family:'Fraunces', serif; font-size:34px; margin-bottom:10px;}
+.welcome p{color:var(--ink-500); max-width:440px; margin-bottom:26px; font-size:15px; line-height:1.6;}
+
+@media (max-width:900px){
+  .sidebar{display:none;}
+  .sidebar.open{
+    display:flex; position:fixed; inset:0; z-index:200; width:100%; max-width:300px;
+    box-shadow: 4px 0 24px rgba(0,0,0,0.3);
+  }
+  .main{padding:16px 16px 80px;}
+  .form-grid{grid-template-columns:1fr;}
+  .detail-grid{grid-template-columns:1fr;}
+  .month-grid{grid-template-columns:repeat(4,1fr);}
+  .page-head{flex-direction:column; gap:12px;}
+  .kpi-grid{grid-template-columns:1fr 1fr;}
+}
+
+/* Mobile overlay backdrop */
+.sidebar-overlay{
+  display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:199;
+}
+.sidebar-overlay.open{display:block;}
+
+/* Bottom nav bar for mobile */
+.mobile-nav{
+  display:none;
+  position:fixed; bottom:0; left:0; right:0;
+  background:var(--ink-900); border-top:1px solid rgba(255,255,255,0.1);
+  z-index:100; padding:8px 0 max(8px, env(safe-area-inset-bottom));
+  grid-template-columns: repeat(5, 1fr);
+}
+.mobile-nav-item{
+  display:flex; flex-direction:column; align-items:center; gap:3px;
+  color:var(--paper-200); font-size:10px; font-weight:600; cursor:pointer;
+  padding:6px 4px; border:none; background:none; font-family:inherit;
+}
+.mobile-nav-item.active{color:var(--copper-500);}
+.mobile-nav-item .ico{font-size:20px; line-height:1;}
+
+@media (max-width:900px){
+  .mobile-nav{display:grid;}
+}
+</style>
+</head>
+<body>
+
+<div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+<div id="root"></div>
+<div class="mobile-nav" id="mobile-nav">
+  <button class="mobile-nav-item" data-nav="dashboard" onclick="mobileNav('dashboard')">
+    <span class="ico">◆</span>Geral
+  </button>
+  <button class="mobile-nav-item" data-nav="properties" onclick="mobileNav('properties')">
+    <span class="ico">⌂</span>Imóveis
+  </button>
+  <button class="mobile-nav-item" data-nav="yield" onclick="mobileNav('yield')">
+    <span class="ico">∧</span>Rend.
+  </button>
+  <button class="mobile-nav-item" data-nav="irs" onclick="mobileNav('irs')">
+    <span class="ico">&#9636;</span>IRS
+  </button>
+  <button class="mobile-nav-item" onclick="openSidebar()">
+    <span class="ico">☰</span>Menu
+  </button>
+</div>
+
+<script>
+/* ============================================================
+   ESTADO E PERSISTÊNCIA
+   ============================================================ */
+const MESES = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+
+/* Categorias IRS — Anexo F */
+const IRS_CATS = [
+  {id:'none',       label:'Não dedutível',              codigo:null},
+  {id:'401',        label:'Renda recebida (401)',        codigo:'401'},
+  {id:'403',        label:'Obras / conservação (403)',   codigo:'403'},
+  {id:'403b',       label:'Mobiliário / equipamento (403)', codigo:'403'},
+  {id:'404',        label:'Condomínio (404)',            codigo:'404'},
+  {id:'405',        label:'Seguro multirriscos (405)',   codigo:'405'},
+  {id:'406',        label:'Juros do crédito (406)',      codigo:'406'},
+  {id:'imi',        label:'IMI (dedutível — 25%)',       codigo:'IMI'},
+  {id:'outros',     label:'Outras despesas dedutíveis',  codigo:'outros'},
+];
+
+function irsLabel(catId){
+  const c = IRS_CATS.find(x=>x.id===catId);
+  return c? c.label : 'Não dedutível';
+}
+function irsCodigo(catId){
+  const c = IRS_CATS.find(x=>x.id===catId);
+  return c? c.codigo : null;
+}
+
+function irsSelectOptions(selected){
+  return IRS_CATS.map(c=>`<option value="${c.id}" ${selected===c.id?'selected':''}>${c.label}</option>`).join('');
+}
+
+/* Calcula o relatório IRS de um imóvel para um dado ano */
+function calcIRSReport(p, year){
+  const units = getUnitsForProperty(p.id);
+
+  // Rendas recebidas: soma das rendas * meses activos no ano
+  let rendas = 0;
+  let retencao = 0;
+  units.forEach(u=>{
+    getLeasesForUnit(u.id).forEach(l=>{
+      const start = l.startDate? new Date(l.startDate) : null;
+      const end   = l.endDate?   new Date(l.endDate)   : null;
+      for(let m=0; m<12; m++){
+        const mDate = new Date(year, m, 15);
+        const after  = !start || mDate >= new Date(start.getFullYear(), start.getMonth(), 1);
+        const before = !end   || mDate <= new Date(end.getFullYear(),   end.getMonth(),   31);
+        if(after && before){
+          rendas   += (l.rentMonthly||0);
+          retencao += (l.rentMonthly||0) * ((l.rentTaxRate||0)/100);
+        }
+      }
+    });
+  });
+
+  // Despesas dedutíveis dos arrendamentos (ownerExpenses com irsCat !== 'none')
+  const leaseExpenses = {};
+  units.forEach(u=>{
+    getLeasesForUnit(u.id).forEach(l=>{
+      const start = l.startDate? new Date(l.startDate) : null;
+      const end   = l.endDate?   new Date(l.endDate)   : null;
+      // count active months in year
+      let months = 0;
+      for(let m=0; m<12; m++){
+        const mDate = new Date(year, m, 15);
+        const after  = !start || mDate >= new Date(start.getFullYear(), start.getMonth(), 1);
+        const before = !end   || mDate <= new Date(end.getFullYear(),   end.getMonth(),   31);
+        if(after && before) months++;
+      }
+      (l.ownerExpenses||[]).forEach(e=>{
+        if(!e.irsCat || e.irsCat==='none') return;
+        const cat = e.irsCat;
+        leaseExpenses[cat] = (leaseExpenses[cat]||0) + (e.amount||0)*months;
+      });
+    });
+  });
+
+  // Custos fixos do imóvel — categorias automáticas
+  const fixedExpenses = {};
+  if(p.condoFee)        fixedExpenses['404']  = (fixedExpenses['404']||0)  + (p.condoFee)*12;
+  if(p.propertyInsurance) fixedExpenses['405']= (fixedExpenses['405']||0)  + (p.propertyInsurance)*12;
+  if(p.bankInstallment) fixedExpenses['406']  = (fixedExpenses['406']||0)  + (p.bankInstallment)*12;
+  // IMI: dedutível até 25% do rendimento bruto (aplicamos 25% do IMI pago)
+  if(p.imiAnnual)       fixedExpenses['imi']  = (fixedExpenses['imi']||0)  + (p.imiAnnual)*0.25;
+
+  // Merge lease + fixed expenses
+  const allExpenses = {...fixedExpenses};
+  Object.entries(leaseExpenses).forEach(([k,v])=>{ allExpenses[k]=(allExpenses[k]||0)+v; });
+
+  const totalDespesas = Object.values(allExpenses).reduce((s,v)=>s+v, 0);
+  const rendimentoLiquido = rendas - totalDespesas;
+
+  return {rendas, retencao, allExpenses, totalDespesas, rendimentoLiquido};
+}
+
+let state = {
+  properties: [],   // {id, name, address, purchasePrice, acquisitionCosts, purchaseDate, imiAnnual, bankInstallment, lifeInsurance, propertyInsurance, condoFee}
+  units: [],         // {id, propertyId, name}  -- fração/quarto dentro de um imóvel. Imóveis simples têm 1 unidade implícita "Imóvel completo"
+  leases: [],        // {id, unitId, tenantName, tenantContact, rentMonthly, startDate, endDate, rentTaxRate, tenantExpenses:[{id,name,amount}], ownerExpenses:[{id,name,amount}], active}
+  payments: {}        // key `${leaseId|propId}_${type}_${year}_${month}` -> bool paid  (type: 'rent' | 'tenantExp_<expId>' | 'ownerExp_<expId>' | fixed costs handled separately)
+};
+
+function ensureUnitsArray(){
+  if(!state.units) state.units = [];
+}
+
+// Migração: se existirem leases antigos com propertyId direto (versão anterior do ficheiro),
+// criar uma unidade "Imóvel completo" por imóvel e religar os leases a essa unidade.
+function migrateLegacyLeases(){
+  ensureUnitsArray();
+  const legacyLeases = state.leases.filter(l=>l.propertyId && !l.unitId);
+  if(legacyLeases.length===0) return;
+  legacyLeases.forEach(l=>{
+    let unit = state.units.find(u=>u.propertyId===l.propertyId && u.legacyDefault);
+    if(!unit){
+      unit = {id: uid(), propertyId: l.propertyId, name:'Imóvel completo', legacyDefault:true};
+      state.units.push(unit);
+    }
+    l.unitId = unit.id;
+    delete l.propertyId;
+  });
+}
+
+// Garante que todo imóvel sem nenhuma unidade recebe uma unidade implícita única,
+// para que imóveis simples (sem frações) continuem a funcionar como antes.
+function ensureDefaultUnits(){
+  ensureUnitsArray();
+  state.properties.forEach(p=>{
+    const hasUnits = state.units.some(u=>u.propertyId===p.id);
+    if(!hasUnits){
+      state.units.push({id: uid(), propertyId: p.id, name:'Imóvel completo', legacyDefault:true});
+    }
+  });
+}
+
+let view = { page: 'dashboard', propertyId: null, tab: 'overview', year: new Date().getFullYear() };
+
+function uid(){ return Math.random().toString(36).slice(2,10); }
+function fmt(n){ return (n||0).toLocaleString('pt-PT',{minimumFractionDigits:2, maximumFractionDigits:2}); }
+function fmtInt(n){ return Math.round(n||0).toLocaleString('pt-PT'); }
+
+const STORAGE_KEY = 'imoveis_app_v1';
+
+function loadFromStorage(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return;
+    const loaded = JSON.parse(raw);
+    state = Object.assign({properties:[],units:[],leases:[],payments:{}}, loaded);
+    migrateLegacyLeases();
+    ensureDefaultUnits();
+  }catch(e){ console.error('Erro ao carregar dados', e); }
+}
+
+function saveToStorage(){
+  try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  }catch(e){ console.error('Erro ao guardar dados', e); }
+}
+
+function persist(){ saveToStorage(); render(); }
+
+function exportData(){
+  const json = JSON.stringify(state, null, 2);
+  const blob = new Blob([json], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'imoveis-backup-'+new Date().toISOString().slice(0,10)+'.json';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function importData(){
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.json,application/json';
+  input.onchange = async ()=>{
+    try{
+      const text = await input.files[0].text();
+      const loaded = JSON.parse(text);
+      if(confirm('Isto vai substituir todos os dados atuais pelo ficheiro importado. Continuar?')){
+        state = Object.assign({properties:[],units:[],leases:[],payments:{}}, loaded);
+        migrateLegacyLeases();
+        ensureDefaultUnits();
+        saveToStorage();
+        render();
+      }
+    }catch(e){ alert('Erro ao ler o ficheiro. Certifique-se que é um backup válido.'); }
+  };
+  input.click();
+}
+
+/* ============================================================
+   CÁLCULOS
+   ============================================================ */
+function getUnitsForProperty(propId){ return state.units.filter(u=>u.propertyId===propId); }
+function getLeasesForUnit(unitId){ return state.leases.filter(l=>l.unitId===unitId); }
+function getActiveLeaseForUnit(unitId){
+  return getLeasesForUnit(unitId).find(l=>l.active) || null;
+}
+function getActiveLeasesForProperty(propId){
+  const units = getUnitsForProperty(propId);
+  return units.map(u=>getActiveLeaseForUnit(u.id)).filter(Boolean);
+}
+function isMultiUnit(propId){ return getUnitsForProperty(propId).length > 1; }
+
+function propertyMonthlyFixedCosts(p){
+  return (p.bankInstallment||0)+(p.lifeInsurance||0)+(p.propertyInsurance||0)+(p.condoFee||0)+((p.imiAnnual||0)/12);
+}
+
+function leaseMonthlyOwnerExpenses(lease){
+  return (lease.ownerExpenses||[]).reduce((s,e)=>s+(e.amount||0),0);
+}
+function leaseMonthlyTenantExpenses(lease){
+  return (lease.tenantExpenses||[]).reduce((s,e)=>s+(e.amount||0),0);
+}
+
+function leaseNetMonthlyForOwner(lease){
+  // renda recebida menos imposto sobre a renda menos despesas que o proprietário paga relacionadas ao arrendamento
+  const tax = (lease.rentMonthly||0) * ((lease.rentTaxRate||0)/100);
+  return (lease.rentMonthly||0) - tax - leaseMonthlyOwnerExpenses(lease);
+}
+
+function totals(){
+  let totalRent=0, totalIMI=0, totalTax=0, totalCondo=0, totalLifeIns=0, totalPropIns=0, totalBank=0, totalOwnerExp=0;
+  state.properties.forEach(p=>{
+    totalIMI += (p.imiAnnual||0)/12;
+    totalCondo += p.condoFee||0;
+    totalLifeIns += p.lifeInsurance||0;
+    totalPropIns += p.propertyInsurance||0;
+    totalBank += p.bankInstallment||0;
+    const activeLeases = getActiveLeasesForProperty(p.id);
+    activeLeases.forEach(lease=>{
+      totalRent += lease.rentMonthly||0;
+      totalTax += (lease.rentMonthly||0)*((lease.rentTaxRate||0)/100);
+      totalOwnerExp += leaseMonthlyOwnerExpenses(lease);
+    });
+  });
+  const totalExpenses = totalIMI+totalTax+totalCondo+totalLifeIns+totalPropIns+totalBank+totalOwnerExp;
+  const netIncome = totalRent - totalExpenses;
+  return {totalRent,totalIMI,totalTax,totalCondo,totalLifeIns,totalPropIns,totalBank,totalOwnerExp,totalExpenses,netIncome};
+}
+
+function propertyMonthlyRent(p){
+  return getActiveLeasesForProperty(p.id).reduce((s,l)=>s+(l.rentMonthly||0),0);
+}
+
+function annualYield(p){
+  const invested = (p.purchasePrice||0)+(p.acquisitionCosts||0);
+  if(invested<=0) return null;
+  const activeLeases = getActiveLeasesForProperty(p.id);
+  let annualNet = -(((p.bankInstallment||0)+(p.lifeInsurance||0)+(p.propertyInsurance||0)+(p.condoFee||0))*12 + (p.imiAnnual||0));
+  activeLeases.forEach(lease=>{
+    annualNet += (lease.rentMonthly||0)*12;
+    annualNet -= (lease.rentMonthly||0)*12*((lease.rentTaxRate||0)/100);
+    annualNet -= leaseMonthlyOwnerExpenses(lease)*12;
+  });
+  return (annualNet/invested)*100;
+}
+
+function paymentKey(scope, id, type, year, month){
+  return `${scope}_${id}_${type}_${year}_${month}`;
+}
+function isPaid(scope,id,type,year,month){
+  return !!state.payments[paymentKey(scope,id,type,year,month)];
+}
+function togglePaid(scope,id,type,year,month){
+  const key = paymentKey(scope,id,type,year,month);
+  state.payments[key] = !state.payments[key];
+  persist();
+}
+
+/* ============================================================
+   RENDER — ROUTER
+   ============================================================ */
+function render(){
+  const root = document.getElementById('root');
+  root.innerHTML = `<div class="app">${renderSidebar()}<div class="main">${renderPage()}</div></div>` + renderModal();
+  attachGlobalHandlers();
+}
+
+function renderSidebar(){
+  return `
+  <div class="sidebar">
+    <div class="brand">Imóveis</div>
+    <div class="brand-sub">Gestão pessoal</div>
+    <div class="nav-item ${view.page==='dashboard'?'active':''}" data-nav="dashboard"><span class="ico">&#9670;</span> Visão geral</div>
+    <div class="nav-item ${view.page==='properties'?'active':''}" data-nav="properties"><span class="ico">&#8962;</span> Imóveis</div>
+    <div class="nav-item ${view.page==='yield'?'active':''}" data-nav="yield"><span class="ico">&#8743;</span> Rentabilidade</div>
+    <div class="nav-item ${view.page==='irs'?'active':''}" data-nav="irs"><span class="ico">&#9636;</span> IRS</div>
+    <div class="sidebar-foot">
+      <div class="file-status">
+        <span class="dot on"></span>
+        Dados guardados localmente
+      </div>
+      <button class="btn-file" data-act="export-data">&#8595; Exportar backup JSON</button>
+      <button class="btn-file" data-act="import-data">&#8593; Importar backup JSON</button>
+      <div style="margin-top:14px; opacity:0.7;">Os dados ficam no seu browser. Faça backups regulares com o botão acima. Nada é enviado para a internet.</div>
+    </div>
+  </div>`;
+}
+
+function renderPage(){
+  if(state.properties.length===0 && view.page!=='properties_new_inline'){
+    return renderWelcome();
+  }
+  if(view.page==='dashboard') return renderDashboard();
+  if(view.page==='properties') return renderPropertiesList();
+  if(view.page==='property_detail') return renderPropertyDetail();
+  if(view.page==='yield') return renderYieldPage();
+  if(view.page==='irs') return renderIRSPage();
+  return renderDashboard();
+}
+
+function renderWelcome(){
+  return `
+  <div class="welcome">
+    <h1>Comece por adicionar um imóvel</h1>
+    <p>Registe os seus imóveis, arrendamentos, inquilinos e despesas. Acompanhe pagamentos mês a mês e veja a rentabilidade anual de cada investimento.</p>
+    <button class="btn btn-copper" data-act="new-property">+ Adicionar imóvel</button>
+  </div>`;
+}
+
+/* ---------------- DASHBOARD ---------------- */
+function renderDashboard(){
+  const t = totals();
+  return `
+  <div class="page-head">
+    <div>
+      <h1 class="page-title">Visão geral</h1>
+      <p class="page-sub">${state.properties.length} imóve${state.properties.length===1?'l':'is'} sob gestão</p>
+    </div>
+    <button class="btn btn-copper" data-act="new-property">+ Novo imóvel</button>
+  </div>
+
+  <div class="kpi-grid">
+    <div class="kpi-card hero">
+      <div class="kpi-label">Rendimento líquido mensal</div>
+      <div class="kpi-value">€ ${fmt(t.netIncome)}</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Total rendas mensais</div>
+      <div class="kpi-value green">€ ${fmt(t.totalRent)}</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Total despesas mensais</div>
+      <div class="kpi-value red">€ ${fmt(t.totalExpenses)}</div>
+    </div>
+  </div>
+
+  <div class="section-title">Detalhe de despesas mensais</div>
+  <div class="card" style="padding:20px 22px;">
+    ${expenseBar('IMI (mensalizado)', t.totalIMI, t.totalExpenses, '#56698c')}
+    ${expenseBar('Imposto sobre a renda', t.totalTax, t.totalExpenses, '#a8412f')}
+    ${expenseBar('Condomínio', t.totalCondo, t.totalExpenses, '#9a5230')}
+    ${expenseBar('Seguro de vida', t.totalLifeIns, t.totalExpenses, '#3f6e52')}
+    ${expenseBar('Seguro do imóvel', t.totalPropIns, t.totalExpenses, '#b5663a')}
+    ${expenseBar('Prestação ao banco', t.totalBank, t.totalExpenses, '#1a2438')}
+    ${expenseBar('Outras despesas (proprietário)', t.totalOwnerExp, t.totalExpenses, '#7a6a4f')}
+  </div>
+
+  <div class="section-title">Imóveis</div>
+  ${renderPropertiesTable()}
+  `;
+}
+
+function expenseBar(label, value, total, color){
+  const pct = total>0 ? Math.max((value/total)*100, value>0?2:0) : 0;
+  return `
+  <div class="bar-row">
+    <div class="bar-label">${label}</div>
+    <div class="bar-track"><div class="bar-fill" style="width:${pct}%; background:${color};"></div></div>
+    <div class="bar-value">€ ${fmt(value)}</div>
+  </div>`;
+}
+
+/* ---------------- PROPERTIES LIST ---------------- */
+function renderPropertiesTable(){
+  if(state.properties.length===0){
+    return `<div class="card"><div class="empty-state"><div class="ico">&#8962;</div>Ainda não tem imóveis registados.</div></div>`;
+  }
+  const rows = state.properties.map(p=>{
+    const units = getUnitsForProperty(p.id);
+    const activeLeases = getActiveLeasesForProperty(p.id);
+    const multi = isMultiUnit(p.id);
+    const y = annualYield(p);
+    const rentMonthly = propertyMonthlyRent(p);
+
+    let tenantCell, rentCell;
+    if(multi){
+      tenantCell = `${activeLeases.length} de ${units.length} fra${units.length===1?'ção':'ções'} ocupada${activeLeases.length===1?'':'s'}`;
+      rentCell = '€ '+fmt(rentMonthly)+'<br><span style="color:var(--ink-500); font-size:11.5px;">soma das frações</span>';
+    } else {
+      tenantCell = activeLeases[0]? esc(activeLeases[0].tenantName) : '<span class="tag neutral">Vazio</span>';
+      rentCell = activeLeases[0]? '€ '+fmt(rentMonthly) : '—';
+    }
+
+    return `
+    <tr class="row-link" data-open-property="${p.id}">
+      <td><strong>${esc(p.name)}</strong><br><span style="color:var(--ink-500); font-size:12.5px;">${esc(p.address||'')}</span></td>
+      <td>${tenantCell}</td>
+      <td class="mono">${rentCell}</td>
+      <td class="mono">€ ${fmt(propertyMonthlyFixedCosts(p))}</td>
+      <td class="mono" style="${y!==null?(y>=0?'color:var(--green-600); font-weight:700;':'color:var(--red-600); font-weight:700;'):''}">${y!==null? fmt(y)+' %' : '—'}</td>
+    </tr>`;
+  }).join('');
+  return `
+  <div class="card">
+    <table>
+      <thead><tr><th>Imóvel</th><th>Inquilino(s)</th><th>Renda</th><th>Custos fixos/mês</th><th>Rentabilidade anual</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+  </div>`;
+}
+
+function renderPropertiesList(){
+  return `
+  <div class="page-head">
+    <div>
+      <h1 class="page-title">Imóveis</h1>
+      <p class="page-sub">Todos os imóveis registados</p>
+    </div>
+    <button class="btn btn-copper" data-act="new-property">+ Novo imóvel</button>
+  </div>
+  ${renderPropertiesTable()}
+  `;
+}
+
+/* ---------------- PROPERTY DETAIL ---------------- */
+function renderPropertyDetail(){
+  const p = state.properties.find(x=>x.id===view.propertyId);
+  if(!p) return renderPropertiesList();
+  ensureDefaultUnits();
+  const units = getUnitsForProperty(p.id);
+  const multi = isMultiUnit(p.id);
+  const activeLeases = getActiveLeasesForProperty(p.id);
+  const rentMonthly = propertyMonthlyRent(p);
+  const y = annualYield(p);
+
+  return `
+  <div class="back-link" data-nav="properties">&larr; Imóveis</div>
+  <div class="page-head">
+    <div>
+      <h1 class="page-title">${esc(p.name)}</h1>
+      <p class="page-sub">${esc(p.address||'')}</p>
+    </div>
+    <div style="display:flex; gap:8px;">
+      <button class="btn btn-ghost btn-sm" data-act="edit-property" data-id="${p.id}">Editar imóvel</button>
+      <button class="btn btn-ghost btn-sm" data-act="new-unit" data-id="${p.id}">+ Nova fração</button>
+    </div>
+  </div>
+
+  <div class="kpi-grid">
+    <div class="kpi-card hero">
+      <div class="kpi-label">Rentabilidade anual</div>
+      <div class="kpi-value">${y!==null? fmt(y)+' %' : '—'}</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Investimento total</div>
+      <div class="kpi-value">€ ${fmt((p.purchasePrice||0)+(p.acquisitionCosts||0))}</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">${multi? 'Renda total (todas as frações)' : 'Renda atual'}</div>
+      <div class="kpi-value green">${activeLeases.length? '€ '+fmt(rentMonthly) : 'Sem inquilino'}</div>
+    </div>
+    ${multi? `
+    <div class="kpi-card">
+      <div class="kpi-label">Ocupação</div>
+      <div class="kpi-value">${activeLeases.length} / ${units.length} frações</div>
+    </div>` : ''}
+  </div>
+
+  <div class="tabs">
+    <div class="tab ${view.tab==='overview'?'active':''}" data-tab="overview">Resumo</div>
+    <div class="tab ${view.tab==='leases'?'active':''}" data-tab="leases">${multi? 'Frações & Arrendamentos' : 'Arrendamentos'}</div>
+    <div class="tab ${view.tab==='payments'?'active':''}" data-tab="payments">Pagamentos</div>
+  </div>
+
+  ${view.tab==='overview'? renderPropertyOverview(p) : ''}
+  ${view.tab==='leases'? renderPropertyUnitsAndLeases(p, units, multi) : ''}
+  ${view.tab==='payments'? renderPropertyPayments(p, units, multi) : ''}
+  `;
+}
+
+function renderPropertyOverview(p){
+  return `
+  <div class="detail-grid">
+    <div class="card" style="padding:6px 0;">
+      <table>
+        <tbody>
+          <tr><td style="color:var(--ink-500); width:55%;">Preço de compra</td><td class="mono">€ ${fmt(p.purchasePrice)}</td></tr>
+          <tr><td style="color:var(--ink-500);">Custos de aquisição</td><td class="mono">€ ${fmt(p.acquisitionCosts)}</td></tr>
+          <tr><td style="color:var(--ink-500);">Data de compra</td><td class="mono">${p.purchaseDate||'—'}</td></tr>
+          <tr><td style="color:var(--ink-500);">IMI anual</td><td class="mono">€ ${fmt(p.imiAnnual)}</td></tr>
+          <tr><td style="color:var(--ink-500);">Prestação ao banco (mensal)</td><td class="mono">€ ${fmt(p.bankInstallment)}</td></tr>
+          <tr><td style="color:var(--ink-500);">Seguro de vida (mensal)</td><td class="mono">€ ${fmt(p.lifeInsurance)}</td></tr>
+          <tr><td style="color:var(--ink-500);">Seguro do imóvel (mensal)</td><td class="mono">€ ${fmt(p.propertyInsurance)}</td></tr>
+          <tr><td style="color:var(--ink-500);">Condomínio (mensal)</td><td class="mono">€ ${fmt(p.condoFee)}</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="card" style="padding:18px 20px;">
+      <div style="font-weight:700; font-size:13.5px; margin-bottom:10px;">Custos fixos mensais</div>
+      <div class="info-row"><span class="k">Total mensal</span><span class="v">€ ${fmt(propertyMonthlyFixedCosts(p))}</span></div>
+      <div style="margin-top:6px; font-size:12px; color:var(--ink-500);">Estes custos são do imóvel como um todo e não são repartidos por fração.</div>
+      <div style="margin-top:14px;"><button class="btn-danger-text" data-act="delete-property" data-id="${p.id}">Eliminar imóvel</button></div>
+    </div>
+  </div>`;
+}
+
+function renderPropertyUnitsAndLeases(p, units, multi){
+  if(units.length===0){
+    return `<div class="card"><div class="empty-state"><div class="ico">&#9633;</div>Sem frações. Adicione uma fração para começar.</div></div>`;
+  }
+  return units.map(u=>{
+    const leases = getLeasesForUnit(u.id).sort((a,b)=>(b.active?1:0)-(a.active?1:0));
+    const activeLease = getActiveLeaseForUnit(u.id);
+    const rows = leases.length===0 ? `<tr><td colspan="5" style="color:var(--ink-500); padding:16px;">Sem arrendamentos registados nesta fração.</td></tr>` :
+      leases.map(l=>`
+      <tr>
+        <td><strong>${esc(l.tenantName)}</strong><br><span style="color:var(--ink-500); font-size:12px;">${esc(l.tenantContact||'')}</span></td>
+        <td class="mono">€ ${fmt(l.rentMonthly)}</td>
+        <td>${l.startDate||'—'} ${l.endDate? '→ '+l.endDate : ''}</td>
+        <td>${l.active? '<span class="tag ok">Ativo</span>' : '<span class="tag neutral">Terminado</span>'}</td>
+        <td style="display:flex; gap:10px;">
+          <button class="btn-danger-text" style="color:var(--ink-700);" data-act="edit-lease" data-id="${l.id}">Editar</button>
+          <button class="btn-danger-text" data-act="delete-lease" data-id="${l.id}">Eliminar</button>
+        </td>
+      </tr>`).join('');
+
+    return `
+    <div class="card" style="margin-bottom:18px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; padding:14px 16px; background:var(--paper-100); border-bottom:1px solid var(--line);">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <strong style="font-size:14.5px;">${esc(u.name)}</strong>
+          ${activeLease? `<span class="tag ok">Ocupada — € ${fmt(activeLease.rentMonthly)}/mês</span>` : `<span class="tag neutral">Vazia</span>`}
+        </div>
+        <div style="display:flex; gap:8px;">
+          ${multi? `<button class="btn-danger-text" data-act="rename-unit" data-id="${u.id}">Editar nome</button>
+          <button class="btn-danger-text" data-act="delete-unit" data-id="${u.id}">Eliminar fração</button>` : ''}
+          <button class="btn btn-copper btn-sm" data-act="new-lease" data-id="${u.id}">+ Novo arrendamento</button>
+        </div>
+      </div>
+      <table>
+        <thead><tr><th>Inquilino</th><th>Renda</th><th>Período</th><th>Estado</th><th></th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+  }).join('');
+}
+
+function renderPropertyPayments(p, units, multi){
+  const year = view.year;
+  const yearOptions = [year-1, year, year+1].map(y=>`<option value="${y}" ${y===year?'selected':''}>${y}</option>`).join('');
+
+  let blocks = '';
+
+  units.forEach(u=>{
+    const lease = getActiveLeaseForUnit(u.id);
+    if(lease){
+      const prefix = multi? esc(u.name)+' — ' : '';
+      blocks += paymentBlock(prefix+'Renda — '+esc(lease.tenantName), 'lease', lease.id, 'rent', year, lease.rentMonthly);
+      (lease.tenantExpenses||[]).forEach(e=>{
+        blocks += paymentBlock(prefix+'Inquilino paga: '+esc(e.name), 'lease', lease.id, 'tenantExp_'+e.id, year, e.amount, true);
+      });
+      (lease.ownerExpenses||[]).forEach(e=>{
+        blocks += paymentBlock(prefix+'Eu pago: '+esc(e.name), 'lease', lease.id, 'ownerExp_'+e.id, year, e.amount, true);
+      });
+    } else if(multi){
+      blocks += `<div class="card" style="padding:16px 20px; color:var(--ink-500); font-size:13.5px;">${esc(u.name)} — sem arrendamento ativo.</div>`;
+    }
+  });
+
+  if(units.every(u=>!getActiveLeaseForUnit(u.id))){
+    blocks = `<div class="card"><div class="empty-state">Sem arrendamentos ativos — adicione um arrendamento para controlar pagamentos de renda.</div></div>` + blocks;
+  }
+
+  blocks += paymentBlock('Prestação ao banco', 'prop', p.id, 'bank', year, p.bankInstallment, true);
+  blocks += paymentBlock('Seguro de vida', 'prop', p.id, 'lifeins', year, p.lifeInsurance, true);
+  blocks += paymentBlock('Seguro do imóvel', 'prop', p.id, 'propins', year, p.propertyInsurance, true);
+  blocks += paymentBlock('Condomínio', 'prop', p.id, 'condo', year, p.condoFee, true);
+  blocks += paymentBlock('IMI (parcela mensal)', 'prop', p.id, 'imi', year, (p.imiAnnual||0)/12, true);
+
+  return `
+  <div class="year-select">
+    <label style="margin:0;">Ano:</label>
+    <select id="year-picker">${yearOptions}</select>
+    <span style="color:var(--ink-500); font-size:13px;">Clique num mês para marcar como pago / não pago</span>
+  </div>
+  ${blocks}
+  `;
+}
+
+function paymentBlock(title, scope, id, type, year, amount, isOwnerCost){
+  const cells = MESES.map((m,i)=>{
+    const paid = isPaid(scope,id,type,year,i);
+    return `<div class="month-cell ${paid?'paid':'unpaid'}" data-pay='${scope}|${id}|${type}|${year}|${i}'>${m}</div>`;
+  }).join('');
+  return `
+  <div class="card" style="padding:18px 20px;">
+    <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:4px;">
+      <div style="font-weight:700; font-size:14px;">${title}</div>
+      <div class="mono" style="font-size:13px; color:var(--ink-500);">€ ${fmt(amount)} /mês</div>
+    </div>
+    <div class="month-grid">${cells}</div>
+  </div>`;
+}
+
+/* ---------------- YIELD PAGE ---------------- */
+function renderYieldPage(){
+  const rows = state.properties.map(p=>{
+    const y = annualYield(p);
+    const invested = (p.purchasePrice||0)+(p.acquisitionCosts||0);
+    const activeLeases = getActiveLeasesForProperty(p.id);
+    let annualNet = -(((p.bankInstallment||0)+(p.lifeInsurance||0)+(p.propertyInsurance||0)+(p.condoFee||0))*12 + (p.imiAnnual||0));
+    activeLeases.forEach(lease=>{
+      annualNet += (lease.rentMonthly||0)*12;
+      annualNet -= (lease.rentMonthly||0)*12*((lease.rentTaxRate||0)/100);
+      annualNet -= leaseMonthlyOwnerExpenses(lease)*12;
+    });
+    return {p, y, invested, annualNet};
+  }).sort((a,b)=>(b.y||-999)-(a.y||-999));
+
+  const maxY = Math.max(...rows.map(r=>Math.abs(r.y||0)), 1);
+
+  const rowsHtml = rows.map(r=>`
+    <tr class="row-link" data-open-property="${r.p.id}">
+      <td><strong>${esc(r.p.name)}</strong></td>
+      <td class="mono">€ ${fmt(r.invested)}</td>
+      <td class="mono">€ ${fmt(r.annualNet)}</td>
+      <td>
+        <div class="bar-row" style="margin-bottom:0;">
+          <div class="bar-track"><div class="bar-fill" style="width:${Math.min(Math.abs(r.y||0)/maxY*100,100)}%; background:${(r.y||0)>=0?'var(--green-600)':'var(--red-600)'};"></div></div>
+          <div class="bar-value" style="color:${(r.y||0)>=0?'var(--green-600)':'var(--red-600)'};">${r.y!==null? fmt(r.y)+' %':'—'}</div>
+        </div>
+      </td>
+    </tr>`).join('');
+
+  return `
+  <div class="page-head">
+    <div>
+      <h1 class="page-title">Rentabilidade anual</h1>
+      <p class="page-sub">Rendimento líquido anual ÷ investimento total (compra + custos de aquisição)</p>
+    </div>
+  </div>
+  ${state.properties.length===0? `<div class="card"><div class="empty-state">Sem imóveis para analisar.</div></div>` : `
+  <div class="card">
+    <table>
+      <thead><tr><th>Imóvel</th><th>Investimento total</th><th>Rendimento líquido anual</th><th>Rentabilidade</th></tr></thead>
+      <tbody>${rowsHtml}</tbody>
+    </table>
+  </div>`}
+  `;
+}
+
+/* ---------------- IRS PAGE ---------------- */
+function renderIRSPage(){
+  const year = view.year;
+  const yearOptions = [year-2, year-1, year, year+1].map(y=>`<option value="${y}" ${y===year?'selected':''}>${y}</option>`).join('');
+
+  if(state.properties.length===0){
+    return `
+    <div class="page-head"><div><h1 class="page-title">IRS — Anexo F</h1></div></div>
+    <div class="card"><div class="empty-state">Sem imóveis registados.</div></div>`;
+  }
+
+  // Totais globais para o ano
+  let totalRendas=0, totalDespesas=0, totalRetencao=0;
+  const propReports = state.properties.map(p=>{
+    const r = calcIRSReport(p, year);
+    totalRendas    += r.rendas;
+    totalDespesas  += r.totalDespesas;
+    totalRetencao  += r.retencao;
+    return {p, r};
+  });
+  const totalLiquido = totalRendas - totalDespesas;
+
+  const propBlocks = propReports.map(({p, r})=>{
+
+    // Group expenses by Anexo F code label
+    const expRows = Object.entries(r.allExpenses).map(([catId, val])=>{
+      const cat = IRS_CATS.find(c=>c.id===catId);
+      const label = cat? cat.label : catId;
+      const codigo = cat? cat.codigo : '';
+      return `
+      <tr>
+        <td style="color:var(--ink-500);">${esc(label)}</td>
+        <td style="color:var(--ink-500); font-size:12px;">${codigo? 'Campo '+codigo : ''}</td>
+        <td class="mono" style="color:var(--red-600);">€ ${fmt(val)}</td>
+      </tr>`;
+    }).join('');
+
+    const noData = r.rendas===0 && r.totalDespesas===0;
+
+    return `
+    <div class="card" style="margin-bottom:22px;">
+      <div style="padding:16px 20px 12px; background:var(--paper-100); border-bottom:1px solid var(--line);">
+        <div style="font-family:'Fraunces',serif; font-size:17px; font-weight:600;">${esc(p.name)}</div>
+        <div style="font-size:12.5px; color:var(--ink-500);">${esc(p.address||'')}</div>
+      </div>
+      ${noData? `<div class="empty-state" style="padding:24px;">Sem rendimentos ou despesas registados para ${year}.</div>` : `
+      <div style="padding:0;">
+        <table>
+          <thead><tr><th colspan="3" style="background:var(--paper-50); color:var(--green-600);">Rendimentos recebidos</th></tr></thead>
+          <tbody>
+            <tr>
+              <td style="color:var(--ink-500);">Rendas recebidas</td>
+              <td style="color:var(--ink-500); font-size:12px;">Campo 401</td>
+              <td class="mono" style="color:var(--green-600);">€ ${fmt(r.rendas)}</td>
+            </tr>
+          </tbody>
+        </table>
+        <table style="margin-top:0; border-top:1px solid var(--paper-200);">
+          <thead><tr><th colspan="3" style="background:var(--paper-50); color:var(--red-600);">Despesas dedutíveis</th></tr></thead>
+          <tbody>
+            ${expRows || `<tr><td colspan="3" style="color:var(--ink-500); font-size:13px; padding:14px 16px;">Sem despesas dedutíveis registadas. Verifique as categorias IRS nas despesas do arrendamento e nos custos fixos do imóvel.</td></tr>`}
+            <tr style="border-top:2px solid var(--line);">
+              <td><strong>Total despesas</strong></td><td></td>
+              <td class="mono" style="font-weight:700; color:var(--red-600);">€ ${fmt(r.totalDespesas)}</td>
+            </tr>
+          </tbody>
+        </table>
+        <table style="border-top:2px solid var(--ink-900);">
+          <tbody>
+            <tr style="background:var(--ink-900);">
+              <td style="color:var(--paper-100); font-weight:700;">Rendimento líquido</td>
+              <td style="color:var(--paper-200); font-size:12px;">Rendas − Despesas</td>
+              <td class="mono" style="color:${r.rendimentoLiquido>=0?'#5fae7e':'#e88'}; font-weight:700; font-size:16px;">€ ${fmt(r.rendimentoLiquido)}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>`}
+    </div>`;
+  }).join('');
+
+  return `
+  <div class="page-head">
+    <div>
+      <h1 class="page-title">IRS — Anexo F</h1>
+      <p class="page-sub">Resumo de rendimentos prediais por imóvel para declaração de IRS</p>
+    </div>
+  </div>
+
+  <div class="year-select" style="margin-bottom:24px;">
+    <label style="margin:0; font-weight:600;">Ano fiscal:</label>
+    <select id="year-picker">${yearOptions}</select>
+  </div>
+
+  <div class="kpi-grid" style="margin-bottom:28px;">
+    <div class="kpi-card hero">
+      <div class="kpi-label">Rendimento líquido total ${year}</div>
+      <div class="kpi-value ${totalLiquido>=0?'':'red'}">€ ${fmt(totalLiquido)}</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Total rendas (campo 401)</div>
+      <div class="kpi-value green">€ ${fmt(totalRendas)}</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Total despesas dedutíveis</div>
+      <div class="kpi-value red">€ ${fmt(totalDespesas)}</div>
+    </div>
+  </div>
+
+  <div class="card" style="padding:16px 20px; margin-bottom:24px; border-left:3px solid var(--copper-500);">
+    <div style="font-size:12.5px; color:var(--ink-700); line-height:1.6;">
+      <strong>Como usar este relatório:</strong> Os valores abaixo correspondem aos campos do Anexo F da declaração de IRS.
+      As <strong>rendas recebidas</strong> vão para o campo 401. As <strong>despesas dedutíveis</strong> vão para os campos indicados em cada linha (403 = obras, 404 = condomínio, 405 = seguro multirriscos, 406 = juros do crédito).
+      O IMI é dedutível até 25% do rendimento bruto de cada imóvel.
+      <br><br>⚠️ Estes valores são calculados com base nos dados introduzidos. Confirme sempre com um contabilista certificado antes de submeter a declaração.
+    </div>
+  </div>
+
+  ${propBlocks}`;
+}
+
+/* ============================================================
+   MODALS (formulários)
+   ============================================================ */
+let modal = null; // {type, data}
+
+function renderModal(){
+  if(!modal) return '';
+  if(modal.type==='property') return propertyModal(modal.data);
+  if(modal.type==='lease') return leaseModal(modal.data);
+  if(modal.type==='unit') return unitModal(modal.data);
+  return '';
+}
+
+function unitModal(data){
+  const u = data.unit || {name:''};
+  return `
+  <div class="modal-backdrop" data-close-modal="1">
+    <div class="modal" style="max-width:420px;" onclick="event.stopPropagation()">
+      <h2>${u.id?'Editar nome da fração':'Nova fração'}</h2>
+      <div class="modal-sub">Ex: "Fração A", "Quarto 1", "T2 — 2º Esq"</div>
+      <input type="hidden" id="f-unit-id" value="${u.id||''}">
+      <input type="hidden" id="f-unit-prop" value="${data.propertyId}">
+      <div class="form-grid col1">
+        <div class="field"><label>Nome da fração / quarto</label><input id="f-unit-name" value="${attr(u.name)}" placeholder="Fração A"></div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" data-act="close-modal">Cancelar</button>
+        <button class="btn btn-primary" data-act="save-unit">Guardar</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function propertyModal(p){
+  const isEdit = !!p;
+  p = p || {name:'',address:'',purchasePrice:'',acquisitionCosts:'',purchaseDate:'',imiAnnual:'',bankInstallment:'',lifeInsurance:'',propertyInsurance:'',condoFee:''};
+  return `
+  <div class="modal-backdrop" data-close-modal="1">
+    <div class="modal" onclick="event.stopPropagation()">
+      <h2>${isEdit?'Editar imóvel':'Novo imóvel'}</h2>
+      <div class="modal-sub">Dados de compra e custos fixos mensais</div>
+      <div class="form-grid">
+        <div class="field span2"><label>Nome do imóvel</label><input id="f-name" value="${attr(p.name)}" placeholder="Ex: Apartamento Rua das Flores, 2º Dto"></div>
+        <div class="field span2"><label>Endereço</label><input id="f-address" value="${attr(p.address)}" placeholder="Endereço completo"></div>
+
+        <div class="section-divider" style="grid-column:1/-1;">Compra</div>
+        <div class="field"><label>Preço de compra (€)</label><input id="f-price" type="number" step="0.01" value="${attr(p.purchasePrice)}"></div>
+        <div class="field"><label>Custos de aquisição (€)</label><input id="f-acq" type="number" step="0.01" value="${attr(p.acquisitionCosts)}" placeholder="IMT, escritura, comissão..."></div>
+        <div class="field"><label>Data de compra</label><input id="f-date" type="date" value="${attr(p.purchaseDate)}"></div>
+        <div class="field"><label>IMI anual (€)</label><input id="f-imi" type="number" step="0.01" value="${attr(p.imiAnnual)}"></div>
+
+        <div class="section-divider" style="grid-column:1/-1;">Custos fixos mensais</div>
+        <div class="field"><label>Prestação ao banco (€/mês)</label><input id="f-bank" type="number" step="0.01" value="${attr(p.bankInstallment)}" placeholder="0 se não há crédito"></div>
+        <div class="field"><label>Seguro de vida (€/mês)</label><input id="f-life" type="number" step="0.01" value="${attr(p.lifeInsurance)}" placeholder="0 se não aplicável"></div>
+        <div class="field"><label>Seguro do imóvel (€/mês)</label><input id="f-propins" type="number" step="0.01" value="${attr(p.propertyInsurance)}"></div>
+        <div class="field"><label>Condomínio (€/mês)</label><input id="f-condo" type="number" step="0.01" value="${attr(p.condoFee)}"></div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" data-act="close-modal">Cancelar</button>
+        <button class="btn btn-primary" data-act="save-property" data-id="${p.id||''}">Guardar imóvel</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function leaseModal(data){
+  const l = data.lease || {tenantName:'',tenantContact:'',rentMonthly:'',startDate:'',endDate:'',rentTaxRate:'',active:true,tenantExpenses:[],ownerExpenses:[]};
+  const unitId = data.unitId;
+  const tenantExpRows = (l.tenantExpenses||[]).map(e=>expenseRow(e,'tenant')).join('');
+  const ownerExpRows = (l.ownerExpenses||[]).map(e=>expenseRow(e,'owner')).join('');
+  return `
+  <div class="modal-backdrop" data-close-modal="1">
+    <div class="modal" onclick="event.stopPropagation()">
+      <h2>${l.id?'Editar arrendamento':'Novo arrendamento'}</h2>
+      <div class="modal-sub">Dados do inquilino e condições de arrendamento</div>
+      <input type="hidden" id="f-lease-id" value="${l.id||''}">
+      <input type="hidden" id="f-lease-unit" value="${unitId}">
+      <div class="form-grid">
+        <div class="field"><label>Nome do inquilino</label><input id="f-tenant" value="${attr(l.tenantName)}"></div>
+        <div class="field"><label>Contacto</label><input id="f-tenant-contact" value="${attr(l.tenantContact)}" placeholder="Telefone / email"></div>
+        <div class="field"><label>Renda mensal (€)</label><input id="f-rent" type="number" step="0.01" value="${attr(l.rentMonthly)}"></div>
+        <div class="field"><label>Taxa de imposto sobre renda (%)</label><input id="f-tax" type="number" step="0.01" value="${attr(l.rentTaxRate)}" placeholder="Ex: 28"></div>
+        <div class="field"><label>Data de início</label><input id="f-start" type="date" value="${attr(l.startDate)}"></div>
+        <div class="field"><label>Data de fim (se aplicável)</label><input id="f-end" type="date" value="${attr(l.endDate)}"></div>
+        <div class="field"><label>Estado</label>
+          <select id="f-active">
+            <option value="true" ${l.active?'selected':''}>Ativo</option>
+            <option value="false" ${!l.active?'selected':''}>Terminado</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="section-divider">Despesas que o inquilino paga</div>
+      <div id="tenant-exp-list">${tenantExpRows}</div>
+      <button class="btn btn-ghost btn-sm" data-act="add-exp-row" data-kind="tenant">+ Adicionar despesa</button>
+
+      <div class="section-divider">Despesas que eu pago (relacionadas a este arrendamento)</div>
+      <div id="owner-exp-list">${ownerExpRows}</div>
+      <button class="btn btn-ghost btn-sm" data-act="add-exp-row" data-kind="owner">+ Adicionar despesa</button>
+
+      <div class="modal-actions">
+        <button class="btn btn-ghost" data-act="close-modal">Cancelar</button>
+        <button class="btn btn-primary" data-act="save-lease">Guardar arrendamento</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function expenseRow(e, kind){
+  const showIrs = kind==='owner'; // só despesas do proprietário são dedutíveis em IRS
+  return `
+  <div style="background:var(--paper-100); border:1px solid var(--line); border-radius:8px; padding:10px 12px; margin-bottom:8px;" data-exp-row data-exp-id="${e.id||''}">
+    <div class="form-grid" style="grid-template-columns:2fr 1fr auto; margin-bottom:${showIrs?'8px':'0'};">
+      <input placeholder="Nome da despesa" value="${attr(e.name)}" data-exp-name>
+      <input type="number" step="0.01" placeholder="€/mês" value="${attr(e.amount)}" data-exp-amount>
+      <button class="btn-danger-text" data-act="remove-exp-row">Remover</button>
+    </div>
+    ${showIrs? `
+    <div class="field">
+      <label style="font-size:11.5px;">Categoria IRS (Anexo F)</label>
+      <select data-exp-irscat>
+        ${irsSelectOptions(e.irsCat||'none')}
+      </select>
+    </div>` : ''}
+  </div>`;
+}
+
+function esc(s){ return (s===undefined||s===null) ? '' : String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function attr(v){ return v===undefined||v===null ? '' : esc(v); }
+
+/* ============================================================
+   EVENT HANDLING
+   ============================================================ */
+function attachGlobalHandlers(){
+  document.querySelectorAll('[data-nav]').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      view.page = el.dataset.nav;
+      view.tab='overview';
+      closeSidebar();
+      render();
+      updateMobileNav();
+    });
+  });
+  document.querySelectorAll('[data-open-property]').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      view.page='property_detail';
+      view.propertyId=el.dataset.openProperty;
+      view.tab='overview';
+      closeSidebar();
+      render();
+    });
+  });
+  document.querySelectorAll('[data-tab]').forEach(el=>{
+    el.addEventListener('click', ()=>{ view.tab = el.dataset.tab; render(); });
+  });
+  const yp = document.getElementById('year-picker');
+  if(yp) yp.addEventListener('change', ()=>{ view.year = parseInt(yp.value); render(); });
+
+  document.querySelectorAll('[data-pay]').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      const [scope,id,type,year,month] = el.dataset.pay.split('|');
+      togglePaid(scope,id,type,parseInt(year),parseInt(month));
+    });
+  });
+
+  const exportBtn = document.querySelector('[data-act="export-data"]');
+  if(exportBtn) exportBtn.addEventListener('click', exportData);
+  const importBtn = document.querySelector('[data-act="import-data"]');
+  if(importBtn) importBtn.addEventListener('click', importData);
+
+  bindAct('new-property', ()=>{ modal={type:'property', data:null}; render(); });
+  bindAct('edit-property', (el)=>{ const p = state.properties.find(x=>x.id===el.dataset.id); modal={type:'property', data:p}; render(); });
+  bindAct('delete-property', (el)=>{
+    if(confirm('Eliminar este imóvel, as suas frações e todos os arrendamentos associados?')){
+      const propId = el.dataset.id;
+      const unitIds = state.units.filter(u=>u.propertyId===propId).map(u=>u.id);
+      state.properties = state.properties.filter(p=>p.id!==propId);
+      state.units = state.units.filter(u=>u.propertyId!==propId);
+      state.leases = state.leases.filter(l=>!unitIds.includes(l.unitId));
+      view.page='properties';
+      persist();
+    }
+  });
+  bindAct('new-lease', (el)=>{ modal={type:'lease', data:{unitId: el.dataset.id, lease:null}}; render(); });
+  bindAct('edit-lease', (el)=>{
+    const l = state.leases.find(x=>x.id===el.dataset.id);
+    modal={type:'lease', data:{unitId: l.unitId, lease:l}}; render();
+  });
+  bindAct('delete-lease', (el)=>{
+    if(confirm('Eliminar este arrendamento?')){
+      state.leases = state.leases.filter(l=>l.id!==el.dataset.id);
+      persist();
+    }
+  });
+  bindAct('new-unit', (el)=>{ modal={type:'unit', data:{propertyId: el.dataset.id, unit:null}}; render(); });
+  bindAct('rename-unit', (el)=>{
+    const u = state.units.find(x=>x.id===el.dataset.id);
+    modal={type:'unit', data:{propertyId: u.propertyId, unit:u}}; render();
+  });
+  bindAct('delete-unit', (el)=>{
+    const unitId = el.dataset.id;
+    const leaseCount = getLeasesForUnit(unitId).length;
+    const msg = leaseCount>0
+      ? `Esta fração tem ${leaseCount} arrendamento(s) registado(s), que serão eliminados também. Continuar?`
+      : 'Eliminar esta fração?';
+    if(confirm(msg)){
+      state.leases = state.leases.filter(l=>l.unitId!==unitId);
+      state.units = state.units.filter(u=>u.id!==unitId);
+      persist();
+    }
+  });
+  bindAct('save-unit', saveUnit);
+  bindAct('close-modal', ()=>{ modal=null; render(); });
+  bindAct('save-property', saveProperty);
+  bindAct('save-lease', saveLease);
+  bindAct('add-exp-row', (el)=>{
+    const list = document.getElementById(el.dataset.kind==='tenant'?'tenant-exp-list':'owner-exp-list');
+    const div = document.createElement('div');
+    div.innerHTML = expenseRow({id:uid(),name:'',amount:''}, el.dataset.kind);
+    list.appendChild(div.firstElementChild);
+    bindRemoveExpButtons();
+  });
+  bindRemoveExpButtons();
+
+  document.querySelectorAll('[data-close-modal]').forEach(el=>{
+    el.addEventListener('click', (ev)=>{ if(ev.target===el){ modal=null; render(); } });
+  });
+}
+
+function bindRemoveExpButtons(){
+  document.querySelectorAll('[data-act="remove-exp-row"]').forEach(el=>{
+    el.onclick = ()=>{ el.closest('[data-exp-row]').remove(); };
+  });
+}
+
+function bindAct(name, fn){
+  document.querySelectorAll(`[data-act="${name}"]`).forEach(el=>{
+    el.addEventListener('click', ()=>fn(el));
+  });
+}
+
+function saveProperty(el){
+  const id = el.dataset.id || uid();
+  const obj = {
+    id,
+    name: document.getElementById('f-name').value.trim() || 'Sem nome',
+    address: document.getElementById('f-address').value.trim(),
+    purchasePrice: parseFloat(document.getElementById('f-price').value)||0,
+    acquisitionCosts: parseFloat(document.getElementById('f-acq').value)||0,
+    purchaseDate: document.getElementById('f-date').value,
+    imiAnnual: parseFloat(document.getElementById('f-imi').value)||0,
+    bankInstallment: parseFloat(document.getElementById('f-bank').value)||0,
+    lifeInsurance: parseFloat(document.getElementById('f-life').value)||0,
+    propertyInsurance: parseFloat(document.getElementById('f-propins').value)||0,
+    condoFee: parseFloat(document.getElementById('f-condo').value)||0,
+  };
+  const idx = state.properties.findIndex(p=>p.id===id);
+  if(idx>=0) state.properties[idx]=obj; else state.properties.push(obj);
+  ensureDefaultUnits();
+  modal=null;
+  persist();
+}
+
+function saveLease(){
+  const id = document.getElementById('f-lease-id').value || uid();
+  const unitId = document.getElementById('f-lease-unit').value;
+  const tenantExpenses = Array.from(document.querySelectorAll('#tenant-exp-list [data-exp-row]')).map(row=>({
+    id: row.dataset.expId || uid(),
+    name: row.querySelector('[data-exp-name]').value.trim(),
+    amount: parseFloat(row.querySelector('[data-exp-amount]').value)||0
+  })).filter(e=>e.name);
+  const ownerExpenses = Array.from(document.querySelectorAll('#owner-exp-list [data-exp-row]')).map(row=>({
+    id: row.dataset.expId || uid(),
+    name: row.querySelector('[data-exp-name]').value.trim(),
+    amount: parseFloat(row.querySelector('[data-exp-amount]').value)||0,
+    irsCat: row.querySelector('[data-exp-irscat]')? row.querySelector('[data-exp-irscat]').value : 'none'
+  })).filter(e=>e.name);
+
+  const obj = {
+    id, unitId,
+    tenantName: document.getElementById('f-tenant').value.trim() || 'Sem nome',
+    tenantContact: document.getElementById('f-tenant-contact').value.trim(),
+    rentMonthly: parseFloat(document.getElementById('f-rent').value)||0,
+    rentTaxRate: parseFloat(document.getElementById('f-tax').value)||0,
+    startDate: document.getElementById('f-start').value,
+    endDate: document.getElementById('f-end').value,
+    active: document.getElementById('f-active').value==='true',
+    tenantExpenses, ownerExpenses
+  };
+
+  if(obj.active){
+    state.leases.forEach(l=>{ if(l.unitId===unitId && l.id!==id) l.active=false; });
+  }
+
+  const idx = state.leases.findIndex(l=>l.id===id);
+  if(idx>=0) state.leases[idx]=obj; else state.leases.push(obj);
+  modal=null;
+  persist();
+}
+
+function saveUnit(){
+  const id = document.getElementById('f-unit-id').value || uid();
+  const propertyId = document.getElementById('f-unit-prop').value;
+  const name = document.getElementById('f-unit-name').value.trim() || 'Fração';
+  const idx = state.units.findIndex(u=>u.id===id);
+  if(idx>=0){
+    state.units[idx].name = name;
+  } else {
+    state.units.push({id, propertyId, name});
+  }
+  modal=null;
+  persist();
+}
+
+/* ============================================================
+   MOBILE NAV HELPERS
+   ============================================================ */
+function openSidebar(){
+  document.querySelector('.sidebar').classList.add('open');
+  document.getElementById('sidebar-overlay').classList.add('open');
+}
+function closeSidebar(){
+  const s = document.querySelector('.sidebar');
+  if(s) s.classList.remove('open');
+  document.getElementById('sidebar-overlay').classList.remove('open');
+}
+function mobileNav(page){
+  view.page = page;
+  view.tab = 'overview';
+  render();
+  updateMobileNav();
+}
+function updateMobileNav(){
+  document.querySelectorAll('.mobile-nav-item[data-nav]').forEach(el=>{
+    el.classList.toggle('active', el.dataset.nav === view.page);
+  });
+}
+
+/* ============================================================
+   INIT
+   ============================================================ */
+loadFromStorage();
+ensureDefaultUnits();
+render();
+updateMobileNav();
+</script>
+</body>
+</html>
