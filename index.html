@@ -845,10 +845,10 @@ function renderPropertyPayments(p, units, multi){
     if(lease){
       const prefix = multi? esc(u.name)+' — ' : '';
       blocks += paymentBlock(prefix+'Renda — '+esc(lease.tenantName), 'lease', lease.id, 'rent', year, lease.rentMonthly);
-      (lease.tenantExpenses||[]).forEach(e=>{
+      (lease.tenantExpenses||[]).filter(e=>(e.amount||0)>0).forEach(e=>{
         blocks += paymentBlock(prefix+'Inquilino paga: '+esc(e.name), 'lease', lease.id, 'tenantExp_'+e.id, year, e.amount, true);
       });
-      (lease.ownerExpenses||[]).forEach(e=>{
+      (lease.ownerExpenses||[]).filter(e=>(e.amount||0)>0).forEach(e=>{
         blocks += paymentBlock(prefix+'Eu pago: '+esc(e.name), 'lease', lease.id, 'ownerExp_'+e.id, year, e.amount, true);
       });
     } else if(multi){
@@ -860,11 +860,11 @@ function renderPropertyPayments(p, units, multi){
     blocks = `<div class="card"><div class="empty-state">Sem arrendamentos ativos — adicione um arrendamento para controlar pagamentos de renda.</div></div>` + blocks;
   }
 
-  blocks += paymentBlock('Prestação ao banco', 'prop', p.id, 'bank', year, p.bankInstallment, true);
-  blocks += paymentBlock('Seguro de vida', 'prop', p.id, 'lifeins', year, p.lifeInsurance, true);
-  blocks += paymentBlock('Seguro do imóvel', 'prop', p.id, 'propins', year, p.propertyInsurance, true);
-  blocks += paymentBlock('Condomínio', 'prop', p.id, 'condo', year, p.condoFee, true);
-  blocks += paymentBlock('IMI (parcela mensal)', 'prop', p.id, 'imi', year, (p.imiAnnual||0)/12, true);
+  if(p.bankInstallment > 0)   blocks += paymentBlock('Prestação ao banco', 'prop', p.id, 'bank', year, p.bankInstallment, true);
+  if(p.lifeInsurance > 0)     blocks += paymentBlock('Seguro de vida', 'prop', p.id, 'lifeins', year, p.lifeInsurance, true);
+  if(p.propertyInsurance > 0) blocks += paymentBlock('Seguro do imóvel', 'prop', p.id, 'propins', year, p.propertyInsurance, true);
+  if(p.condoFee > 0)          blocks += paymentBlock('Condomínio', 'prop', p.id, 'condo', year, p.condoFee, true);
+  if(p.imiAnnual > 0)         blocks += paymentBlock('IMI (parcela mensal)', 'prop', p.id, 'imi', year, (p.imiAnnual||0)/12, true);
 
   return `
   <div class="year-select">
