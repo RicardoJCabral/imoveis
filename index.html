@@ -298,7 +298,6 @@ const IRS_CATS = [
   {id:'403b',       label:'Mobiliário / equipamento (403)', codigo:'403'},
   {id:'404',        label:'Condomínio (404)',            codigo:'404'},
   {id:'405',        label:'Seguro multirriscos (405)',   codigo:'405'},
-  {id:'406',        label:'Juros do crédito (406)',      codigo:'406'},
   {id:'imi',        label:'IMI (dedutível — 25%)',       codigo:'IMI'},
   {id:'outros',     label:'Outras despesas dedutíveis',  codigo:'outros'},
 ];
@@ -365,8 +364,7 @@ function calcIRSReport(p, year){
   const fixedExpenses = {};
   if(p.condoFee)        fixedExpenses['404']  = (fixedExpenses['404']||0)  + (p.condoFee)*12;
   if(p.propertyInsurance) fixedExpenses['405']= (fixedExpenses['405']||0)  + (p.propertyInsurance)*12;
-  if(p.bankInstallment) fixedExpenses['406']  = (fixedExpenses['406']||0)  + (p.bankInstallment)*12;
-  // IMI: dedutível até 25% do rendimento bruto (aplicamos 25% do IMI pago)
+  // IMI: dedutível até 25% do rendimento bruto
   if(p.imiAnnual)       fixedExpenses['imi']  = (fixedExpenses['imi']||0)  + (p.imiAnnual)*0.25;
 
   // Merge lease + fixed expenses
@@ -1051,8 +1049,8 @@ function renderIRSPage(){
   <div class="card" style="padding:16px 20px; margin-bottom:24px; border-left:3px solid var(--copper-500);">
     <div style="font-size:12.5px; color:var(--ink-700); line-height:1.6;">
       <strong>Como usar este relatório:</strong> Os valores abaixo correspondem aos campos do Anexo F da declaração de IRS.
-      As <strong>rendas recebidas</strong> vão para o campo 401. As <strong>despesas dedutíveis</strong> vão para os campos indicados em cada linha (403 = obras, 404 = condomínio, 405 = seguro multirriscos, 406 = juros do crédito).
-      O IMI é dedutível até 25% do rendimento bruto de cada imóvel.
+      As <strong>rendas recebidas</strong> vão para o campo 401. As <strong>despesas dedutíveis</strong> vão para os campos indicados em cada linha (403 = obras/conservação, 404 = condomínio, 405 = seguro multirriscos).
+      O IMI é dedutível até 25% do rendimento bruto de cada imóvel. A prestação ao banco (capital + juros) <strong>não é dedutível</strong> em IRS para arrendamento.
       <br><br>⚠️ Estes valores são calculados com base nos dados introduzidos. Confirme sempre com um contabilista certificado antes de submeter a declaração.
     </div>
   </div>
