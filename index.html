@@ -247,7 +247,7 @@ input:focus, select:focus{outline:2px solid var(--copper-500); outline-offset:0;
   position:fixed; bottom:0; left:0; right:0;
   background:var(--ink-900); border-top:1px solid rgba(255,255,255,0.1);
   z-index:100; padding:8px 0 max(8px, env(safe-area-inset-bottom));
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
 }
 .mobile-nav-item{
   display:flex; flex-direction:column; align-items:center; gap:3px;
@@ -276,6 +276,9 @@ input:focus, select:focus{outline:2px solid var(--copper-500); outline-offset:0;
   <button class="mobile-nav-item" data-nav="yield" onclick="mobileNav('yield')">
     <span class="ico">∧</span>Rend.
   </button>
+  <button class="mobile-nav-item" data-nav="irs" onclick="mobileNav('irs')">
+    <span class="ico">&#9636;</span>IRS
+  </button>
   <button class="mobile-nav-item" onclick="openSidebar()">
     <span class="ico">☰</span>Menu
   </button>
@@ -286,6 +289,95 @@ input:focus, select:focus{outline:2px solid var(--copper-500); outline-offset:0;
    ESTADO E PERSISTÊNCIA
    ============================================================ */
 const MESES = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+
+/* Categorias IRS — Anexo F */
+const IRS_CATS = [
+  {id:'none',       label:'Não dedutível',              codigo:null},
+  {id:'401',        label:'Renda recebida (401)',        codigo:'401'},
+  {id:'403',        label:'Obras / conservação (403)',   codigo:'403'},
+  {id:'403b',       label:'Mobiliário / equipamento (403)', codigo:'403'},
+  {id:'404',        label:'Condomínio (404)',            codigo:'404'},
+  {id:'405',        label:'Seguro multirriscos (405)',   codigo:'405'},
+  {id:'406',        label:'Juros do crédito (406)',      codigo:'406'},
+  {id:'imi',        label:'IMI (dedutível — 25%)',       codigo:'IMI'},
+  {id:'outros',     label:'Outras despesas dedutíveis',  codigo:'outros'},
+];
+
+function irsLabel(catId){
+  const c = IRS_CATS.find(x=>x.id===catId);
+  return c? c.label : 'Não dedutível';
+}
+function irsCodigo(catId){
+  const c = IRS_CATS.find(x=>x.id===catId);
+  return c? c.codigo : null;
+}
+
+function irsSelectOptions(selected){
+  return IRS_CATS.map(c=>`<option value="${c.id}" ${selected===c.id?'selected':''}>${c.label}</option>`).join('');
+}
+
+/* Calcula o relatório IRS de um imóvel para um dado ano */
+function calcIRSReport(p, year){
+  const units = getUnitsForProperty(p.id);
+
+  // Rendas recebidas: soma das rendas * meses activos no ano
+  let rendas = 0;
+  let retencao = 0;
+  units.forEach(u=>{
+    getLeasesForUnit(u.id).forEach(l=>{
+      const start = l.startDate? new Date(l.startDate) : null;
+      const end   = l.endDate?   new Date(l.endDate)   : null;
+      for(let m=0; m<12; m++){
+        const mDate = new Date(year, m, 15);
+        const after  = !start || mDate >= new Date(start.getFullYear(), start.getMonth(), 1);
+        const before = !end   || mDate <= new Date(end.getFullYear(),   end.getMonth(),   31);
+        if(after && before){
+          rendas   += (l.rentMonthly||0);
+          retencao += (l.rentMonthly||0) * ((l.rentTaxRate||0)/100);
+        }
+      }
+    });
+  });
+
+  // Despesas dedutíveis dos arrendamentos (ownerExpenses com irsCat !== 'none')
+  const leaseExpenses = {};
+  units.forEach(u=>{
+    getLeasesForUnit(u.id).forEach(l=>{
+      const start = l.startDate? new Date(l.startDate) : null;
+      const end   = l.endDate?   new Date(l.endDate)   : null;
+      // count active months in year
+      let months = 0;
+      for(let m=0; m<12; m++){
+        const mDate = new Date(year, m, 15);
+        const after  = !start || mDate >= new Date(start.getFullYear(), start.getMonth(), 1);
+        const before = !end   || mDate <= new Date(end.getFullYear(),   end.getMonth(),   31);
+        if(after && before) months++;
+      }
+      (l.ownerExpenses||[]).forEach(e=>{
+        if(!e.irsCat || e.irsCat==='none') return;
+        const cat = e.irsCat;
+        leaseExpenses[cat] = (leaseExpenses[cat]||0) + (e.amount||0)*months;
+      });
+    });
+  });
+
+  // Custos fixos do imóvel — categorias automáticas
+  const fixedExpenses = {};
+  if(p.condoFee)        fixedExpenses['404']  = (fixedExpenses['404']||0)  + (p.condoFee)*12;
+  if(p.propertyInsurance) fixedExpenses['405']= (fixedExpenses['405']||0)  + (p.propertyInsurance)*12;
+  if(p.bankInstallment) fixedExpenses['406']  = (fixedExpenses['406']||0)  + (p.bankInstallment)*12;
+  // IMI: dedutível até 25% do rendimento bruto (aplicamos 25% do IMI pago)
+  if(p.imiAnnual)       fixedExpenses['imi']  = (fixedExpenses['imi']||0)  + (p.imiAnnual)*0.25;
+
+  // Merge lease + fixed expenses
+  const allExpenses = {...fixedExpenses};
+  Object.entries(leaseExpenses).forEach(([k,v])=>{ allExpenses[k]=(allExpenses[k]||0)+v; });
+
+  const totalDespesas = Object.values(allExpenses).reduce((s,v)=>s+v, 0);
+  const rendimentoLiquido = rendas - totalDespesas;
+
+  return {rendas, retencao, allExpenses, totalDespesas, rendimentoLiquido};
+}
 
 let state = {
   properties: [],   // {id, name, address, purchasePrice, acquisitionCosts, purchaseDate, imiAnnual, bankInstallment, lifeInsurance, propertyInsurance, condoFee}
@@ -482,6 +574,7 @@ function renderSidebar(){
     <div class="nav-item ${view.page==='dashboard'?'active':''}" data-nav="dashboard"><span class="ico">&#9670;</span> Visão geral</div>
     <div class="nav-item ${view.page==='properties'?'active':''}" data-nav="properties"><span class="ico">&#8962;</span> Imóveis</div>
     <div class="nav-item ${view.page==='yield'?'active':''}" data-nav="yield"><span class="ico">&#8743;</span> Rentabilidade</div>
+    <div class="nav-item ${view.page==='irs'?'active':''}" data-nav="irs"><span class="ico">&#9636;</span> IRS</div>
     <div class="sidebar-foot">
       <div class="file-status">
         <span class="dot on"></span>
@@ -502,6 +595,7 @@ function renderPage(){
   if(view.page==='properties') return renderPropertiesList();
   if(view.page==='property_detail') return renderPropertyDetail();
   if(view.page==='yield') return renderYieldPage();
+  if(view.page==='irs') return renderIRSPage();
   return renderDashboard();
 }
 
@@ -846,6 +940,126 @@ function renderYieldPage(){
   `;
 }
 
+/* ---------------- IRS PAGE ---------------- */
+function renderIRSPage(){
+  const year = view.year;
+  const yearOptions = [year-2, year-1, year, year+1].map(y=>`<option value="${y}" ${y===year?'selected':''}>${y}</option>`).join('');
+
+  if(state.properties.length===0){
+    return `
+    <div class="page-head"><div><h1 class="page-title">IRS — Anexo F</h1></div></div>
+    <div class="card"><div class="empty-state">Sem imóveis registados.</div></div>`;
+  }
+
+  // Totais globais para o ano
+  let totalRendas=0, totalDespesas=0, totalRetencao=0;
+  const propReports = state.properties.map(p=>{
+    const r = calcIRSReport(p, year);
+    totalRendas    += r.rendas;
+    totalDespesas  += r.totalDespesas;
+    totalRetencao  += r.retencao;
+    return {p, r};
+  });
+  const totalLiquido = totalRendas - totalDespesas;
+
+  const propBlocks = propReports.map(({p, r})=>{
+
+    // Group expenses by Anexo F code label
+    const expRows = Object.entries(r.allExpenses).map(([catId, val])=>{
+      const cat = IRS_CATS.find(c=>c.id===catId);
+      const label = cat? cat.label : catId;
+      const codigo = cat? cat.codigo : '';
+      return `
+      <tr>
+        <td style="color:var(--ink-500);">${esc(label)}</td>
+        <td style="color:var(--ink-500); font-size:12px;">${codigo? 'Campo '+codigo : ''}</td>
+        <td class="mono" style="color:var(--red-600);">€ ${fmt(val)}</td>
+      </tr>`;
+    }).join('');
+
+    const noData = r.rendas===0 && r.totalDespesas===0;
+
+    return `
+    <div class="card" style="margin-bottom:22px;">
+      <div style="padding:16px 20px 12px; background:var(--paper-100); border-bottom:1px solid var(--line);">
+        <div style="font-family:'Fraunces',serif; font-size:17px; font-weight:600;">${esc(p.name)}</div>
+        <div style="font-size:12.5px; color:var(--ink-500);">${esc(p.address||'')}</div>
+      </div>
+      ${noData? `<div class="empty-state" style="padding:24px;">Sem rendimentos ou despesas registados para ${year}.</div>` : `
+      <div style="padding:0;">
+        <table>
+          <thead><tr><th colspan="3" style="background:var(--paper-50); color:var(--green-600);">Rendimentos recebidos</th></tr></thead>
+          <tbody>
+            <tr>
+              <td style="color:var(--ink-500);">Rendas recebidas</td>
+              <td style="color:var(--ink-500); font-size:12px;">Campo 401</td>
+              <td class="mono" style="color:var(--green-600);">€ ${fmt(r.rendas)}</td>
+            </tr>
+          </tbody>
+        </table>
+        <table style="margin-top:0; border-top:1px solid var(--paper-200);">
+          <thead><tr><th colspan="3" style="background:var(--paper-50); color:var(--red-600);">Despesas dedutíveis</th></tr></thead>
+          <tbody>
+            ${expRows || `<tr><td colspan="3" style="color:var(--ink-500); font-size:13px; padding:14px 16px;">Sem despesas dedutíveis registadas. Verifique as categorias IRS nas despesas do arrendamento e nos custos fixos do imóvel.</td></tr>`}
+            <tr style="border-top:2px solid var(--line);">
+              <td><strong>Total despesas</strong></td><td></td>
+              <td class="mono" style="font-weight:700; color:var(--red-600);">€ ${fmt(r.totalDespesas)}</td>
+            </tr>
+          </tbody>
+        </table>
+        <table style="border-top:2px solid var(--ink-900);">
+          <tbody>
+            <tr style="background:var(--ink-900);">
+              <td style="color:var(--paper-100); font-weight:700;">Rendimento líquido</td>
+              <td style="color:var(--paper-200); font-size:12px;">Rendas − Despesas</td>
+              <td class="mono" style="color:${r.rendimentoLiquido>=0?'#5fae7e':'#e88'}; font-weight:700; font-size:16px;">€ ${fmt(r.rendimentoLiquido)}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>`}
+    </div>`;
+  }).join('');
+
+  return `
+  <div class="page-head">
+    <div>
+      <h1 class="page-title">IRS — Anexo F</h1>
+      <p class="page-sub">Resumo de rendimentos prediais por imóvel para declaração de IRS</p>
+    </div>
+  </div>
+
+  <div class="year-select" style="margin-bottom:24px;">
+    <label style="margin:0; font-weight:600;">Ano fiscal:</label>
+    <select id="year-picker">${yearOptions}</select>
+  </div>
+
+  <div class="kpi-grid" style="margin-bottom:28px;">
+    <div class="kpi-card hero">
+      <div class="kpi-label">Rendimento líquido total ${year}</div>
+      <div class="kpi-value ${totalLiquido>=0?'':'red'}">€ ${fmt(totalLiquido)}</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Total rendas (campo 401)</div>
+      <div class="kpi-value green">€ ${fmt(totalRendas)}</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Total despesas dedutíveis</div>
+      <div class="kpi-value red">€ ${fmt(totalDespesas)}</div>
+    </div>
+  </div>
+
+  <div class="card" style="padding:16px 20px; margin-bottom:24px; border-left:3px solid var(--copper-500);">
+    <div style="font-size:12.5px; color:var(--ink-700); line-height:1.6;">
+      <strong>Como usar este relatório:</strong> Os valores abaixo correspondem aos campos do Anexo F da declaração de IRS.
+      As <strong>rendas recebidas</strong> vão para o campo 401. As <strong>despesas dedutíveis</strong> vão para os campos indicados em cada linha (403 = obras, 404 = condomínio, 405 = seguro multirriscos, 406 = juros do crédito).
+      O IMI é dedutível até 25% do rendimento bruto de cada imóvel.
+      <br><br>⚠️ Estes valores são calculados com base nos dados introduzidos. Confirme sempre com um contabilista certificado antes de submeter a declaração.
+    </div>
+  </div>
+
+  ${propBlocks}`;
+}
+
 /* ============================================================
    MODALS (formulários)
    ============================================================ */
@@ -955,11 +1169,21 @@ function leaseModal(data){
 }
 
 function expenseRow(e, kind){
+  const showIrs = kind==='owner'; // só despesas do proprietário são dedutíveis em IRS
   return `
-  <div class="form-grid" style="grid-template-columns:2fr 1fr auto; margin-bottom:8px;" data-exp-row data-exp-id="${e.id}">
-    <input placeholder="Nome da despesa" value="${attr(e.name)}" data-exp-name>
-    <input type="number" step="0.01" placeholder="€/mês" value="${attr(e.amount)}" data-exp-amount>
-    <button class="btn-danger-text" data-act="remove-exp-row" data-id="${e.id}">Remover</button>
+  <div style="background:var(--paper-100); border:1px solid var(--line); border-radius:8px; padding:10px 12px; margin-bottom:8px;" data-exp-row data-exp-id="${e.id||''}">
+    <div class="form-grid" style="grid-template-columns:2fr 1fr auto; margin-bottom:${showIrs?'8px':'0'};">
+      <input placeholder="Nome da despesa" value="${attr(e.name)}" data-exp-name>
+      <input type="number" step="0.01" placeholder="€/mês" value="${attr(e.amount)}" data-exp-amount>
+      <button class="btn-danger-text" data-act="remove-exp-row">Remover</button>
+    </div>
+    ${showIrs? `
+    <div class="field">
+      <label style="font-size:11.5px;">Categoria IRS (Anexo F)</label>
+      <select data-exp-irscat>
+        ${irsSelectOptions(e.irsCat||'none')}
+      </select>
+    </div>` : ''}
   </div>`;
 }
 
@@ -1110,7 +1334,8 @@ function saveLease(){
   const ownerExpenses = Array.from(document.querySelectorAll('#owner-exp-list [data-exp-row]')).map(row=>({
     id: row.dataset.expId || uid(),
     name: row.querySelector('[data-exp-name]').value.trim(),
-    amount: parseFloat(row.querySelector('[data-exp-amount]').value)||0
+    amount: parseFloat(row.querySelector('[data-exp-amount]').value)||0,
+    irsCat: row.querySelector('[data-exp-irscat]')? row.querySelector('[data-exp-irscat]').value : 'none'
   })).filter(e=>e.name);
 
   const obj = {
