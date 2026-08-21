@@ -1142,6 +1142,7 @@ function leaseModal(data){
         <div class="field"><label>Taxa de imposto sobre renda (%)</label><input id="f-tax" type="number" step="0.01" value="${attr(l.rentTaxRate)}" placeholder="Ex: 28"></div>
         <div class="field"><label>Data de início</label><input id="f-start" type="date" value="${attr(l.startDate)}"></div>
         <div class="field"><label>Data de fim (se aplicável)</label><input id="f-end" type="date" value="${attr(l.endDate)}"></div>
+        <div class="field"><label>Dia de pagamento da renda</label><input id="f-rentday" type="number" min="1" max="28" value="${attr(l.rentDay||1)}" placeholder="Ex: 8"></div>
         <div class="field"><label>Estado</label>
           <select id="f-active">
             <option value="true" ${l.active?'selected':''}>Ativo</option>
@@ -1344,6 +1345,7 @@ function saveLease(){
     rentTaxRate: parseFloat(document.getElementById('f-tax').value)||0,
     startDate: document.getElementById('f-start').value,
     endDate: document.getElementById('f-end').value,
+    rentDay: parseInt(document.getElementById('f-rentday').value)||1,
     active: document.getElementById('f-active').value==='true',
     tenantExpenses, ownerExpenses
   };
@@ -1356,6 +1358,7 @@ function saveLease(){
   if(idx>=0) state.leases[idx]=obj; else state.leases.push(obj);
   modal=null;
   persist();
+  scheduleRentNotifications();
 }
 
 function saveUnit(){
@@ -1370,6 +1373,87 @@ function saveUnit(){
   }
   modal=null;
   persist();
+}
+
+/* ============================================================
+   NOTIFICAÇÕES LOCAIS
+   ============================================================ */
+const SW_URL = 'sw.js';
+
+async function registerSW(){
+  if(!('serviceWorker' in navigator)) return;
+  try{
+    const reg = await navigator.serviceWorker.register(SW_URL);
+    console.log('SW registado:', reg.scope);
+    // Escuta mensagens do SW (ex: utilizador tocou na notificação)
+    navigator.serviceWorker.addEventListener('message', ev=>{
+      if(ev.data && ev.data.type==='open-lease'){
+        const {propertyId, unitId} = ev.data;
+        view.page = 'property_detail';
+        view.propertyId = propertyId;
+        view.tab = 'payments';
+        render();
+      }
+    });
+  }catch(e){ console.warn('SW falhou:', e); }
+}
+
+async function requestNotificationPermission(){
+  if(!('Notification' in window)) return false;
+  if(Notification.permission === 'granted') return true;
+  if(Notification.permission === 'denied') return false;
+  const perm = await Notification.requestPermission();
+  return perm === 'granted';
+}
+
+// Agenda notificações para o dia seguinte ao vencimento de cada renda ativa
+async function scheduleRentNotifications(){
+  if(!('serviceWorker' in navigator)) return;
+  const reg = await navigator.serviceWorker.ready;
+  if(!reg.active) return;
+
+  const today = new Date();
+  const todayDay = today.getDate();
+  const notifications = [];
+
+  state.properties.forEach(p=>{
+    getUnitsForProperty(p.id).forEach(u=>{
+      const lease = getActiveLeaseForUnit(u.id);
+      if(!lease || !lease.active) return;
+      const rentDay = lease.rentDay || 1;
+      const notifDay = rentDay + 1; // dia seguinte ao vencimento
+
+      // Calcular quando é o próximo dia de notificação
+      let notifDate = new Date(today.getFullYear(), today.getMonth(), notifDay);
+      if(notifDate <= today){
+        // já passou este mês, agendar para o mês seguinte
+        notifDate = new Date(today.getFullYear(), today.getMonth()+1, notifDay);
+      }
+      // Agendar para as 10:00 desse dia
+      notifDate.setHours(10, 0, 0, 0);
+
+      const propName = p.name;
+      const unitName = getUnitsForProperty(p.id).length > 1 ? ` — ${u.name}` : '';
+      notifications.push({
+        id: `rent_${lease.id}`,
+        title: `Renda recebida? — ${propName}${unitName}`,
+        body: `${lease.tenantName} devia pagar a renda no dia ${rentDay}. Marcar como recebida?`,
+        timestamp: notifDate.getTime(),
+        propertyId: p.id,
+        unitId: u.id,
+        leaseId: lease.id
+      });
+    });
+  });
+
+  // Envia lista ao SW para ele gerir os timeouts
+  reg.active.postMessage({type:'schedule-notifications', notifications});
+}
+
+async function initNotifications(){
+  await registerSW();
+  const granted = await requestNotificationPermission();
+  if(granted) await scheduleRentNotifications();
 }
 
 /* ============================================================
@@ -1401,8 +1485,22 @@ function updateMobileNav(){
    ============================================================ */
 loadFromStorage();
 ensureDefaultUnits();
+
+// Se a app foi aberta a partir de uma notificação, navegar diretamente
+(function handleNotificationOpen(){
+  const params = new URLSearchParams(window.location.search);
+  if(params.get('open')==='payments' && params.get('propertyId')){
+    view.page = 'property_detail';
+    view.propertyId = params.get('propertyId');
+    view.tab = 'payments';
+    // Limpar os params do URL sem recarregar
+    history.replaceState({}, '', window.location.pathname);
+  }
+})();
+
 render();
 updateMobileNav();
+initNotifications();
 </script>
 </body>
 </html>
